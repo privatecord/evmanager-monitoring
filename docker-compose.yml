@@ -39,26 +39,17 @@ services:
       - prometheus
       - loki
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-evmanager}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-tizian}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
-      GF_SERVER_ROOT_URL: https://grafana.privatecord.de
       TZ: Europe/Berlin
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.privatecord.de`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      - "traefik.docker.network=dokploy-network"
     networks:
       - monitoring_internal
       - dokploy-network
