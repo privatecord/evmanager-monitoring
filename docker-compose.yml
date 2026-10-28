@@ -15,7 +15,7 @@ services:
       - dokploy-network
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.0
     container_name: grafana
     restart: unless-stopped
     depends_on:
