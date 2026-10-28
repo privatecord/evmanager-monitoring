@@ -1,64 +1,51 @@
 # EVManager Monitoring
 
-Monitoring stack for the EVManager project.
+Docker- und Host-Monitoring für einen Dokploy-Host mit Grafana, Prometheus, cAdvisor und node-exporter.
 
-## Included
+## Einrichtung in Dokploy
 
-- Grafana dashboard for the EVManager overview
-- Prometheus metric scraping and alert rules
-- Alertmanager for notifications
-- Loki and Promtail for logs
-- cAdvisor for Docker container metrics
-- node-exporter for host metrics
+1. Diesen Repository-Branch als Compose-Anwendung auswählen.
+2. Das externe Docker-Netzwerk `dokploy-network` muss bereits existieren.
+3. Die Variablen aus `.env.example` in Dokploy setzen. Ein starkes `GRAFANA_ADMIN_PASSWORD` und `GRAFANA_DOMAIN` ohne Protokoll oder Pfad sind verpflichtend.
+4. DNS der Domain auf den Host richten. Die Traefik-Konfiguration erwartet den EntryPoint `websecure` und den Zertifikatsresolver `letsencrypt`.
+5. Manuell deployen und Grafana unter `https://<GRAFANA_DOMAIN>` öffnen.
 
-## Dashboard sections
+Grafana erfordert eine Anmeldung. Bei bestehenden Grafana-Daten ändern die Admin-Umgebungsvariablen das bereits gespeicherte Passwort nicht.
 
-- Overview: requests per second, active sessions, running containers and 5xx error rate
-- System load: CPU, RAM and host usage
-- Traffic: HTTP status codes, request latency and routes
-- Database: DB query rate and DB query latency
-- Logs: recent EVManager container logs
+## Dashboards und Daten
 
-## Start locally
+- **Docker & Host Monitoring**: Container-Auslastung, Host-CPU, RAM, Dateisystem und I/O.
+- **EVManager Monitoring**: zusätzliche Containeransichten und vorbereitete App-Panels.
 
-```bash
-docker compose up -d
+Prometheus scrapt aktuell ausschließlich Prometheus, cAdvisor und node-exporter. App-Panels bleiben ohne zusätzliche Integration leer; das ist kein Nachweis eines App-Ausfalls. Für die Integration müssen der tatsächliche, erreichbare App-Service und Port in `monitoring/prometheus/prometheus.yml` ergänzt werden. Der Jobname muss zum Dashboard passen, etwa `evmanager`.
+
+Die App muss dafür passende Metriken bereitstellen:
+- `http_requests_total{route,method,status}`
+- `http_request_duration_seconds_bucket{route,method,le}`
+
+Die Containerfilter im EVManager-Dashboard erwarten Namen mit evmanager, frontend, backend bzw. dev/prod. Vor Nutzung gegen die tatsächlichen cAdvisor-Labels prüfen. Datenbankpanels zeigen Containerressourcen, keine Query-Metriken.
+
+Alarmierung und zentrale Logs sind derzeit **nicht implementiert**.
+
+## Betrieb
+
+Metriken werden standardmäßig 15 Tage aufbewahrt; `PROMETHEUS_RETENTION` passt das Zeitfenster an. Den Speicherverbrauch zusätzlich überwachen.
+
+Persistente Volumes heißen weiterhin `docker_prometheus_data` und `docker_grafana_data`. Vor Updates sichern; `docker compose down -v` löscht Daten. Die festen Container- und Netzwerknamen erlauben nur eine solche Installation pro Host.
+
+Dashboard-Änderungen im Grafana-UI sind nicht automatisch im Repository gespeichert und können durch Provisionierung überschrieben werden. Dauerhafte Änderungen als JSON ins Repository übernehmen.
+
+Die Images verwenden noch `latest`. Vor einem Produktionsupdate getestete Versionen festlegen und den Wechsel mit den bestehenden Volumes prüfen. cAdvisor benötigt in dieser Konfiguration privilegierten Hostzugriff.
+
+## Prüfung vor Deployment
+
+Mit gesetzten Variablen bzw. einer lokalen `.env`:
+
+```sh
+docker compose config --quiet
+docker compose run --rm --no-deps --entrypoint promtool prometheus check config /etc/prometheus/prometheus.yml
 ```
 
-Grafana: http://localhost:3000
+Nach Deployment in Grafana über Explore `up` abfragen: alle drei konfigurierten Targets sollten 1 liefern. Anschließend Hostwerte und Containernamen mit dem tatsächlichen Host vergleichen.
 
-Default login:
-
-```txt
-admin / evmanager
-```
-
-Change the password before production usage.
-
-## Required EVManager app metrics
-
-Your app should expose Prometheus metrics at `/metrics`.
-
-Expected metric names:
-
-```txt
-http_requests_total{route="/",method="GET",status="200"}
-http_request_duration_seconds_bucket{route="/",method="GET",le="0.5"}
-db_query_duration_seconds_bucket{operation="select",table="events",le="0.2"}
-db_queries_total{operation="select",table="events"}
-active_sessions
-```
-
-Infrastructure panels work through cAdvisor and node-exporter. App-specific panels become useful once the EVManager app exports these metrics.
-
-## Alert behavior
-
-Container-down alerts tolerate rebuilds/restarts up to 2 minutes:
-
-```promql
-absent(container_last_seen{name=~"evmanager.*"}) or time() - container_last_seen{name=~"evmanager.*"} > 120
-```
-
-## Dokploy
-
-Use this repo as a Compose application in Dokploy. Adjust the `evmanager-app:3000` Prometheus target to the real service/container name if needed.
+Es werden keine Hostports veröffentlicht; der Zugriff erfolgt über Traefik. Ein unverändertes lokales `docker compose up` ohne Dokploy-Netzwerk und Traefik ist daher kein vollständiges lokales Setup.
