@@ -35,7 +35,7 @@ Persistente Volumes heißen weiterhin `docker_prometheus_data` und `docker_grafa
 
 Dashboard-Änderungen im Grafana-UI sind nicht automatisch im Repository gespeichert und können durch Provisionierung überschrieben werden. Dauerhafte Änderungen als JSON ins Repository übernehmen.
 
-Die Images verwenden noch `latest`. Vor einem Produktionsupdate getestete Versionen festlegen und den Wechsel mit den bestehenden Volumes prüfen. cAdvisor benötigt in dieser Konfiguration privilegierten Hostzugriff.
+Grafana ist auf `grafana/grafana:13.3.0` festgelegt (stabile Veröffentlichung vom 27.10.2026). Die übrigen Images verwenden noch `latest`. Vor deren Update getestete Versionen festlegen und den Wechsel mit den bestehenden Volumes prüfen. cAdvisor benötigt in dieser Konfiguration privilegierten Hostzugriff.
 
 ## Prüfung vor Deployment
 
@@ -49,3 +49,20 @@ docker compose run --rm --no-deps --entrypoint promtool prometheus check config 
 Nach Deployment in Grafana über Explore `up` abfragen: alle drei konfigurierten Targets sollten 1 liefern. Anschließend Hostwerte und Containernamen mit dem tatsächlichen Host vergleichen.
 
 Es werden keine Hostports veröffentlicht; der Zugriff erfolgt über Traefik. Ein unverändertes lokales `docker compose up` ohne Dokploy-Netzwerk und Traefik ist daher kein vollständiges lokales Setup.
+
+## Grafana aktualisieren
+
+1. Aktuelle Grafana-Version und Image-ID notieren.
+2. Grafana stoppen und das vollständige Volume `docker_grafana_data` sichern (einschließlich SQLite-Datenbank). Die Sicherung außerhalb des Volumes aufbewahren. Danach Grafana bei Bedarf wieder starten, bis das Deployment bereit ist.
+3. In Dokploy den Branch `feature/evmanager-monitoring-dashboard` mit der aktualisierten Compose-Datei manuell deployen. Das Image `grafana/grafana:13.3.0` muss dabei heruntergeladen werden.
+4. Startlogs auf Migrations- und Provisionierungsfehler prüfen. Login, beide Dashboards und die Prometheus-Datenquelle testen. Die laufende Version über `/api/health` prüfen; erwartet wird `13.3.0`.
+
+Benutzer, Passwort und Einstellungen bleiben im bestehenden Volume erhalten. Kein neues Volume anlegen und keine Volumes löschen.
+
+Grafana 13 migriert beim ersten Start einer älteren Installation Dashboard- und Ordnerdaten in Unified Storage. Für einen Rollback die Sicherung von vor dem Update zusammen mit dem vorherigen Image wiederherstellen; ein bloßer Wechsel auf einen älteren Image-Tag genügt nicht.
+
+Offizielle Hinweise:
+- https://grafana.com/grafana/download/13.3.0?edition=oss
+- https://grafana.com/docs/grafana/latest/upgrade-guide/upgrade-v13/upgrade-v13.0/
+
+Die Änderung ist im Repository vorbereitet. Ein Laufzeittest und die Migration müssen auf dem Dokploy-Host geprüft werden.
