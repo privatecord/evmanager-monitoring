@@ -1,0 +1,189 @@
+{
+  "uid": "evmanager-dashboard",
+  "title": "EVManager Monitoring",
+  "tags": ["evmanager", "system", "app-health", "frontend", "database", "requests"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    { "id": 1, "type": "row", "title": "System", "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Host CPU Usage",
+      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Host Memory Usage",
+      "gridPos": { "x": 8, "y": 1, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Filesystem Usage",
+      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "1 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"})" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "options": {}
+    },
+    { "id": 5, "type": "row", "title": "App Health", "gridPos": { "x": 0, "y": 7, "w": 24, "h": 1 }, "collapsed": false },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "EVManager App Up",
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "up{job=~\"evmanager.*|app.*|backend.*|frontend.*\"}" }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "App Container CPU",
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".*evmanager.*|.*frontend.*|.*backend.*\"}[5m]))", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "cores" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "App Container RAM",
+      "gridPos": { "x": 16, "y": 8, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "container_memory_working_set_bytes{name=~\".*evmanager.*|.*frontend.*|.*backend.*\"}", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {}
+    },
+    { "id": 9, "type": "row", "title": "Frontend Container Health - Dev / Prod", "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 }, "collapsed": false },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Frontend DEV CPU",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".*frontend.*dev.*|.*dev.*frontend.*\"}[5m]))", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "cores" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Frontend PROD CPU",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".*frontend.*prod.*|.*prod.*frontend.*\"}[5m]))", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "cores" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Frontend DEV RAM",
+      "gridPos": { "x": 0, "y": 22, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "container_memory_working_set_bytes{name=~\".*frontend.*dev.*|.*dev.*frontend.*\"}", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Frontend PROD RAM",
+      "gridPos": { "x": 12, "y": 22, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "container_memory_working_set_bytes{name=~\".*frontend.*prod.*|.*prod.*frontend.*\"}", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {}
+    },
+    { "id": 14, "type": "row", "title": "DB Backend", "gridPos": { "x": 0, "y": 29, "w": 24, "h": 1 }, "collapsed": false },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "DB / Backend CPU",
+      "gridPos": { "x": 0, "y": 30, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".*db.*|.*database.*|.*postgres.*|.*mysql.*|.*backend.*\"}[5m]))", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "cores" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "DB / Backend RAM",
+      "gridPos": { "x": 12, "y": 30, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "container_memory_working_set_bytes{name=~\".*db.*|.*database.*|.*postgres.*|.*mysql.*|.*backend.*\"}", "legendFormat": "{{name}}" }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {}
+    },
+    { "id": 17, "type": "row", "title": "Requests", "gridPos": { "x": 0, "y": 37, "w": 24, "h": 1 }, "collapsed": false },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Requests / sec",
+      "gridPos": { "x": 0, "y": 38, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(rate(http_requests_total[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "HTTP 5xx Error Rate",
+      "gridPos": { "x": 8, "y": 38, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "Request Latency p95",
+      "gridPos": { "x": 16, "y": 38, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))" }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Requests by Status",
+      "gridPos": { "x": 0, "y": 44, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (status) (rate(http_requests_total[1m]))", "legendFormat": "{{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Requests by Route",
+      "gridPos": { "x": 12, "y": 44, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum by (route) (rate(http_requests_total[1m]))", "legendFormat": "{{route}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "options": {}
+    }
+  ]
+}
